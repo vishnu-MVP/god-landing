@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GOD — Omniscient Prediction Markets</title>
+  <meta name="description" content="GOD is a Polymarket-style prediction market powered by a Bayesian-Hawkes-Transformer ML ensemble. 30+ live data sources. Real-time probabilistic forecasts with explainable reasoning." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #05060a;
+      --bg2: #0a0c14;
+      --glass: rgba(255,255,255,0.04);
+      --glass-border: rgba(255,255,255,0.08);
+      --oracle: #818cf8;
+      --pulse: #22d3ee;
+      --safe: #34d399;
+      --warning: #fbbf24;
+      --danger: #ef4444;
+      --star: #e5e7eb;
+      --star-dim: rgba(229,231,235,0.5);
+      --star-faint: rgba(229,231,235,0.25);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--star);
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Starfield background */
+    .starfield {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(129,140,248,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 50%, rgba(34,211,238,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(129,140,248,0.05) 0%, transparent 60%);
+    }
+    .stars {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0; pointer-events: none; opacity: 0.4;
+    }
+
+    /* Nav */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      backdrop-filter: blur(12px);
+      background: rgba(5,6,10,0.7);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 0.75rem 0;
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      font-size: 1.25rem; font-weight: 900; letter-spacing: 0.05em;
+      background: linear-gradient(135deg, var(--oracle), var(--pulse));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a {
+      color: var(--star-dim); text-decoration: none; font-size: 0.875rem;
+      font-weight: 500; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--star); }
+    .nav-cta {
+      padding: 0.5rem 1.25rem; border-radius: 0.5rem;
+      background: linear-gradient(135deg, rgba(129,140,248,0.2), rgba(34,211,238,0.15));
+      border: 1px solid rgba(129,140,248,0.3);
+      color: var(--oracle) !important; font-weight: 600;
+    }
+    @media (max-width: 768px) { .nav-links a:not(.nav-cta) { display: none; } }
+
+    /* Hero */
+    .hero {
+      position: relative; z-index: 1;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 6rem 1.5rem 4rem;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.4rem 1rem; border-radius: 999px;
+      background: rgba(129,140,248,0.1); border: 1px solid rgba(129,140,248,0.2);
+      font-size: 0.75rem; font-weight: 600; color: var(--oracle);
+      margin-bottom: 1.5rem; letter-spacing: 0.05em;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--safe);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .hero h1 {
+      font-size: clamp(2.5rem, 8vw, 5.5rem); font-weight: 900;
+      line-height: 1.05; letter-spacing: -0.03em; margin-bottom: 1.5rem;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(135deg, var(--oracle) 0%, var(--pulse) 50%, var(--oracle) 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 4s linear infinite;
+    }
+    @keyframes shimmer { to { background-position: 200% center; } }
+    .hero p {
+      font-size: clamp(1rem, 2.5vw, 1.35rem); color: var(--star-dim);
+      max-width: 640px; margin: 0 auto 2.5rem; line-height: 1.6;
+    }
+    .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      padding: 0.875rem 2rem; border-radius: 0.625rem; border: none; cursor: pointer;
+      font-size: 1rem; font-weight: 700; font-family: inherit;
+      background: linear-gradient(135deg, var(--oracle), #6366f1);
+      color: white; transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 30px rgba(129,140,248,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(129,140,248,0.5); }
+    .btn-secondary {
+      padding: 0.875rem 2rem; border-radius: 0.625rem; cursor: pointer;
+      font-size: 1rem; font-weight: 600; font-family: inherit;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      color: var(--star); transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-secondary:hover { border-color: rgba(129,140,248,0.3); background: rgba(129,140,248,0.05); }
+
+    /* Stats bar */
+    .stats-bar {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+      background: var(--glass-border);
+      border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);
+      margin: 0;
+    }
+    .stat { background: var(--bg); padding: 2rem 1rem; text-align: center; }
+    .stat .num { font-size: 2rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .stat .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--star-faint); margin-top: 0.25rem; }
+    .stat .num.oracle { color: var(--oracle); }
+    .stat .num.pulse { color: var(--pulse); }
+    .stat .num.safe { color: var(--safe); }
+    .stat .num.warning { color: var(--warning); }
+    @media (max-width: 768px) { .stats-bar { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Sections */
+    section { position: relative; z-index: 1; padding: 6rem 1.5rem; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.2em;
+      color: var(--oracle); font-weight: 700; margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-size: clamp(1.75rem, 4vw, 2.75rem); font-weight: 800;
+      letter-spacing: -0.02em; margin-bottom: 1rem; line-height: 1.15;
+    }
+    .section-sub { font-size: 1.1rem; color: var(--star-dim); max-width: 600px; margin-bottom: 3rem; }
+
+    /* Feature grid */
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+    .feature-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: 0.875rem; padding: 1.75rem; transition: border-color 0.3s, transform 0.3s;
+    }
+    .feature-card:hover { border-color: rgba(129,140,248,0.25); transform: translateY(-4px); }
+    .feature-icon { font-size: 1.75rem; margin-bottom: 0.75rem; }
+    .feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .feature-card p { font-size: 0.875rem; color: var(--star-dim); line-height: 1.6; }
+    @media (max-width: 768px) { .feature-grid { grid-template-columns: 1fr; } }
+
+    /* How it works */
+    .pipeline { display: flex; flex-direction: column; gap: 0; }
+    .pipeline-step {
+      display: flex; gap: 1.5rem; padding: 1.5rem 0;
+      border-left: 2px solid var(--glass-border); margin-left: 1rem;
+      padding-left: 2rem; position: relative;
+    }
+    .pipeline-step::before {
+      content: ''; position: absolute; left: -7px; top: 1.75rem;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--oracle); box-shadow: 0 0 12px rgba(129,140,248,0.5);
+    }
+    .pipeline-step .step-num { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--oracle); font-weight: 700; }
+    .pipeline-step h4 { font-size: 1rem; font-weight: 700; margin: 0.25rem 0 0.5rem; }
+    .pipeline-step p { font-size: 0.875rem; color: var(--star-dim); }
+
+    /* Data sources */
+    .sources-cloud { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .source-tag {
+      padding: 0.4rem 0.9rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 500;
+      background: rgba(129,140,248,0.08); border: 1px solid rgba(129,140,248,0.15);
+      color: var(--oracle);
+    }
+
+    /* Monetization / Pricing */
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-top: 2rem; }
+    .price-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: 1rem; padding: 2rem; position: relative;
+    }
+    .price-card.featured {
+      border-color: rgba(129,140,248,0.4);
+      background: linear-gradient(180deg, rgba(129,140,248,0.06), var(--glass));
+      box-shadow: 0 0 40px rgba(129,140,248,0.1);
+    }
+    .price-card .badge {
+      position: absolute; top: -0.6rem; left: 50%; transform: translateX(-50%);
+      padding: 0.2rem 0.75rem; border-radius: 999px; font-size: 0.65rem; font-weight: 700;
+      background: var(--oracle); color: white; letter-spacing: 0.05em;
+    }
+    .price-card h4 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .price-card .price { font-size: 2.25rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; margin-bottom: 0.25rem; }
+    .price-card .price-sub { font-size: 0.8rem; color: var(--star-faint); margin-bottom: 1.25rem; }
+    .price-card ul { list-style: none; }
+    .price-card li { font-size: 0.85rem; color: var(--star-dim); padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .price-card li::before { content: '✓ '; color: var(--safe); font-weight: 700; }
+    @media (max-width: 768px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+    /* Email capture */
+    .email-section {
+      text-align: center; padding: 5rem 1.5rem;
+      background: linear-gradient(180deg, transparent, rgba(129,140,248,0.04), transparent);
+    }
+    .email-form {
+      display: flex; gap: 0.5rem; max-width: 440px; margin: 1.5rem auto 0;
+      flex-wrap: wrap; justify-content: center;
+    }
+    .email-form input {
+      flex: 1; min-width: 200px; padding: 0.75rem 1rem; border-radius: 0.5rem;
+      background: var(--glass); border: 1px solid var(--glass-border);
+      color: var(--star); font-size: 0.9rem; font-family: inherit;
+    }
+    .email-form input::placeholder { color: var(--star-faint); }
+    .email-form input:focus { outline: none; border-color: rgba(129,140,248,0.4); }
+    .email-form button {
+      padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--oracle), #6366f1);
+      color: white; font-weight: 700; font-family: inherit; font-size: 0.9rem;
+    }
+    .email-note { font-size: 0.75rem; color: var(--star-faint); margin-top: 0.75rem; }
+
+    /* Footer */
+    footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--glass-border); padding: 2.5rem 1.5rem;
+      text-align: center;
+    }
+    footer .logo { font-size: 1rem; margin-bottom: 0.5rem; }
+    footer p { font-size: 0.75rem; color: var(--star-faint); }
+
+    /* Reveal animation */
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s, transform 0.7s; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="starfield"></div>
+  <canvas class="stars" id="stars"></canvas>
+
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">GOD</div>
+      <div class="nav-links">
+        <a href="#how">How It Works</a>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#early" class="nav-cta">Get Early Access</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div>
+      <div class="hero-badge"><span class="dot"></span> 30+ LIVE DATA SOURCES · BAYESIAN-HAWKES-TRANSFORMER ENSEMBLE</div>
+      <h1>See <span class="grad">Tomorrow</span><br>Today.</h1>
+      <p>GOD is a prediction market platform that watches the world in real time — 177+ data streams, causal inference, and dark signal detection — to forecast what happens next with calibrated, explainable probabilities.</p>
+      <div class="hero-cta">
+        <button class="btn-primary" onclick="document.getElementById('early').scrollIntoView()">Get Early Access</button>
+        <button class="btn-secondary" onclick="document.getElementById('how').scrollIntoView()">How It Works</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat"><div class="num oracle">177+</div><div class="label">Data Sources</div></div>
+    <div class="stat"><div class="num pulse">5</div><div class="label">ML Models</div></div>
+    <div class="stat"><div class="num safe">12</div><div class="label">Event Domains</div></div>
+    <div class="stat"><div class="num warning">8</div><div class="label">Engine Layers</div></div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <div class="section-inner">
+      <div class="section-label reveal">How It Works</div>
+      <h2 class="section-title reveal">An 8-layer engine that watches, thinks, and predicts.</h2>
+      <p class="section-sub reveal">From raw data ingestion to calibrated probabilistic forecasts — every prediction is backed by a traceable causal chain and real evidence.</p>
+      <div class="pipeline">
+        <div class="pipeline-step reveal"><div><div class="step-num">L1 → L2</div><h4>Ingest & Stream</h4><p>177+ collectors across 12 domains feed Redis Streams — dedup, enrich, and route in real time.</p></div></div>
+        <div class="pipeline-step reveal"><div><div class="step-num">L3 → L4</div><h4>Extract & Graph</h4><p>Gemini LLM extracts structured events. Neo4j builds a temporal knowledge graph of entities, events, and causal edges.</p></div></div>
+        <div class="pipeline-step reveal"><div><div class="step-num">L5 → L6</div><h4>Dark Signals & Correlation</h4><p>Granger causality, transfer entropy, and mutual information discover non-obvious cause→effect chains. Dark intelligence detects absences and behavioral shifts.</p></div></div>
+        <div class="pipeline-step reveal"><div><div class="step-num">L7 → L8</div><h4>Predict & Display</h4><p>Bayesian + Hawkes + Transformer ensemble produces calibrated probabilities. Platt-scaled, Brier-scored, served through a real-time globe UI.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="section-inner">
+      <div class="section-label reveal">Features</div>
+      <h2 class="section-title reveal">Built like Polymarket. Powered by an oracle.</h2>
+      <p class="section-sub reveal">Every feature you'd expect from a prediction market — plus an ML engine that does the research for you.</p>
+      <div class="feature-grid">
+        <div class="feature-card reveal"><div class="feature-icon">🔮</div><h3>Prophecies</h3><p>Forecasted events with confidence scores, causal chains, supporting evidence, and live confidence evolution tracking.</p></div>
+        <div class="feature-card reveal"><div class="feature-icon">🌐</div><h3>Globe View</h3><p>See predictions geolocated on an interactive 3D globe. Watch the world's hotspots in real time.</p></div>
+        <div class="feature-card reveal"><div class="feature-icon">📊</div><h3>Markets</h3><p>Polymarket-style prediction markets across Politics, Geopolitics, Economy, Crypto, Technology, and Climate.</p></div>
+        <div class="feature-card reveal"><div class="feature-icon">🌑</div><h3>Dark Signals</h3><p>Detects absences, behavioral shifts, shadow networks, and cross-domain anomalies that others miss.</p></div>
+        <div class="feature-card reveal"><div class="feature-icon">📈</div><h3>Accuracy Tracking</h3><p>Every prediction is Brier-scored and logged. Model weights adapt based on historical performance.</p></div>
+        <div class="feature-card reveal"><div class="feature-icon">🏆</div><h3>Leaderboard & Portfolio</h3><p>Track top forecasters, build a portfolio, and compete on calibration — not just luck.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DATA SOURCES -->
+  <section>
+    <div class="section-inner">
+      <div class="section-label reveal">Data Sources</div>
+      <h2 class="section-title reveal">30+ live collectors. 177+ streams. 12 domains.</h2>
+      <p class="section-sub reveal">GOD doesn't rely on a single feed. It cross-correlates news, social signals, financial markets, weather, seismic activity, satellite data, and more.</p>
+      <div class="sources-cloud reveal">
+        <span class="source-tag">GDELT</span><span class="source-tag">Reddit</span><span class="source-tag">Yahoo Finance</span>
+        <span class="source-tag">USGS Earthquakes</span><span class="source-tag">NASA FIRMS</span><span class="source-tag">Open-Meteo</span>
+        <span class="source-tag">Hacker News</span><span class="source-tag">OpenSky</span><span class="source-tag">ACLED</span>
+        <span class="source-tag">WHO</span><span class="source-tag">CISA Cyber</span><span class="source-tag">EIA Energy</span>
+        <span class="source-tag">NOAA Weather</span><span class="source-tag">FRED Economic</span><span class="source-tag">IAEA Nuclear</span>
+        <span class="source-tag">FAO Food</span><span class="source-tag">SEC Sanctions</span><span class="source-tag">UNHCR Refugee</span>
+        <span class="source-tag">Wikimedia</span><span class="source-tag">GitHub Security</span><span class="source-tag">News RSS</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING / MONETIZATION -->
+  <section id="pricing">
+    <div class="section-inner">
+      <div class="section-label reveal">Pricing</div>
+      <h2 class="section-title reveal">Start free. Upgrade for the oracle.</h2>
+      <p class="section-sub reveal">GOD is free to explore. Power users and developers get API access, real-time alerts, and the full prediction engine.</p>
+      <div class="pricing-grid">
+        <div class="price-card reveal">
+          <h4>Seeker</h4>
+          <div class="price">Free</div>
+          <div class="price-sub">forever</div>
+          <ul>
+            <li>Browse all prediction markets</li>
+            <li>View prophecies & confidence scores</li>
+            <li>Globe view & live feed</li>
+            <li>Accuracy dashboard</li>
+            <li>Community leaderboard</li>
+          </ul>
+        </div>
+        <div class="price-card featured reveal">
+          <div class="badge">MOST POPULAR</div>
+          <h4>Oracle</h4>
+          <div class="price">$29<span style="font-size:1rem;font-weight:500;color:var(--star-faint)">/mo</span></div>
+          <div class="price-sub">billed monthly</div>
+          <ul>
+            <li>Everything in Seeker</li>
+            <li>Real-time dark signal alerts</li>
+            <li>Full causal chain & evidence view</li>
+            <li>Confidence evolution history</li>
+            <li>Custom prediction watchlists</li>
+            <li>Early access to new markets</li>
+          </ul>
+        </div>
+        <div class="price-card reveal">
+          <h4>Prophet</h4>
+          <div class="price">$99<span style="font-size:1rem;font-weight:500;color:var(--star-faint)">/mo</span></div>
+          <div class="price-sub">for developers & funds</div>
+          <ul>
+            <li>Everything in Oracle</li>
+            <li>Full API access (REST + WebSocket)</li>
+            <li>Raw model probabilities & ensemble weights</li>
+            <li>Historical prediction archive</li>
+            <li>Webhook alerts on new prophecies</li>
+            <li>Priority data collector requests</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EMAIL CAPTURE -->
+  <section id="early" class="email-section">
+    <div class="section-inner">
+      <div class="section-label reveal" style="text-align:center">Early Access</div>
+      <h2 class="section-title reveal" style="text-align:center">Be first to see what the oracle sees.</h2>
+      <p class="section-sub reveal" style="margin-left:auto;margin-right:auto;text-align:center">Join the early access list. We'll notify you when GOD goes live — and you'll get a free Oracle upgrade for the first 3 months.</p>
+      <form class="email-form reveal" onsubmit="return captureEmail(event)">
+        <input type="email" id="emailInput" placeholder="you@email.com" required />
+        <button type="submit">Notify Me</button>
+      </form>
+      <p class="email-note">No spam. One email when GOD launches. Unsubscribe anytime.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="logo">GOD</div>
+    <p>Omniscient Prediction Engine · Bayesian-Hawkes-Transformer Ensemble · Brier-Scored · Self-Evololving</p>
+    <p style="margin-top:0.5rem">© 2025 VishnuPrasad Mathiyalagan · MIT License</p>
+  </footer>
+
+  <script>
+    // Starfield canvas
+    (function() {
+      const c = document.getElementById('stars');
+      const ctx = c.getContext('2d');
+      let stars = [];
+      function resize() { c.width = window.innerWidth; c.height = window.innerHeight; init(); }
+      function init() {
+        stars = [];
+        const count = Math.floor((c.width * c.height) / 8000);
+        for (let i = 0; i < count; i++) {
+          stars.push({ x: Math.random()*c.width, y: Math.random()*c.height, r: Math.random()*1.2, o: Math.random()*0.5+0.1, s: Math.random()*0.02+0.005 });
+        }
+      }
+      function draw() {
+        ctx.clearRect(0,0,c.width,c.height);
+        stars.forEach(s => {
+          s.o += s.s; if (s.o > 0.6 || s.o < 0.1) s.s *= -1;
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(229,231,235,' + s.o + ')'; ctx.fill();
+        });
+        requestAnimationFrame(draw);
+      }
+      window.addEventListener('resize', resize);
+      resize(); draw();
+    })();
+
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Email capture (no backend — stores locally, shows confirmation)
+    function captureEmail(e) {
+      e.preventDefault();
+      const input = document.getElementById('emailInput');
+      const email = input.value;
+      const form = input.parentElement;
+      form.innerHTML = '<div style="color:var(--safe);font-weight:600;padding:0.75rem;">✓ You\'re on the list. We\'ll email you when GOD goes live.</div>';
+      // Store locally for now
+      try {
+        let list = JSON.parse(localStorage.getItem('god_waitlist') || '[]');
+        list.push({ email, date: new Date().toISOString() });
+        localStorage.setItem('god_waitlist', JSON.stringify(list));
+      } catch(err) {}
+      return false;
+    }
+  </script>
+</body>
+</html>
